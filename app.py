@@ -15,7 +15,6 @@ st.set_page_config(page_title="SniperBase", layout="wide")
 
 st.title("🚀 SniperBase")
 st.markdown("Твій асистент для аналізу пампів, снайпінгу мем-токенів та швидкого входу в угоди. Тут буде 🔥.")
-
 st.info("🔧 MVP у процесі. Функціонал скоро буде розширено.")
 
 st.subheader("🧠 Введи адресу контракту токена")
@@ -56,10 +55,16 @@ if token_address:
             data = response.json()
             if data.get("status") == "1" and "result" in data and len(data["result"]) > 0:
                 contract_info = data["result"][0]
-                is_verified = contract_info.get("SourceCode", "") != ""
+                abi_status = contract_info.get("ABI", "")
+                is_verified = abi_status != "Contract source code not verified"
+
+                contract_name = contract_info.get("ContractName", "Невідомо")
+                compiler = contract_info.get("CompilerVersion", "Невідомо")
                 creator_address = contract_info.get("ContractCreator", "Невідомо")
 
                 st.markdown(f"✅ Верифікація контракту: {'✔️ Так' if is_verified else '❌ Ні'}")
+                st.markdown(f"🧪 Назва контракту: `{contract_name}`")
+                st.markdown(f"🛠 Компілер: `{compiler}`")
                 st.markdown(f"📍 Адреса власника контракту: `{creator_address}`")
             else:
                 st.warning("⚠️ Контракт не верифікований або не знайдено результатів на Etherscan")
