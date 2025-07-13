@@ -34,6 +34,21 @@ if token_address:
         symbol = contract.functions.symbol().call()
         decimals = contract.functions.decimals().call()
         total_supply = contract.functions.totalSupply().call() / (10 ** decimals)
+# 🛡️ Дані з Etherscan API
+etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={token_address}&apikey={ETHERSCAN_API_KEY}"
+response = requests.get(etherscan_url)
+if response.status_code == 200:
+    data = response.json()
+    if data["status"] == "1":
+        contract_info = data["result"][0]
+        is_verified = contract_info["SourceCode"] != ""
+        creator_address = contract_info["ContractCreator"]
+        st.markdown(f"🛡️ Верифікація контракту: {'✅ Так' if is_verified else '❌ Ні'}")
+        st.markdown(f"🧾 Адреса власника контракту: `{creator_address}`")
+    else:
+        st.error("❌ Не вдалось отримати інформацію з Etherscan")
+else:
+    st.error("❌ Etherscan API не відповідає")
 
         st.success(f"🟢 Назва токена: {name}")
         st.success(f"🟢 Символ: {symbol}")
