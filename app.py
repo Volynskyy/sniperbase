@@ -12,14 +12,12 @@ from web3 import Web3
 ETHERSCAN_API_KEY = "XSUUHZ6HN6ED625QCRD6DK2UBFBKT65G"
 
 st.set_page_config(page_title="SniperBase", layout="wide")
-
 st.title("🚀 SniperBase")
 st.markdown("Твій асистент для аналізу пампів, снайпінгу мем-токенів та швидкого входу в угоди. Тут буде 🔥.")
 st.info("🔧 MVP у процесі. Функціонал скоро буде розширено.")
-
 st.subheader("🧠 Введи адресу контракту токена")
-token_address = st.text_input("Адреса контракту (ERC-20):")
 
+token_address = st.text_input("Адреса контракту (ERC-20):")
 rpc_url = "https://eth.llamarpc.com"
 web3 = Web3(Web3.HTTPProvider(rpc_url))
 
@@ -46,7 +44,7 @@ if token_address:
     except Exception as e:
         st.error(f"❌ Помилка при обробці токена: {e}")
 
-    # --- Etherscan перевірка ---
+    # Etherscan перевірка
     try:
         etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={token_address}&apikey={ETHERSCAN_API_KEY}"
         response = requests.get(etherscan_url)
@@ -55,16 +53,10 @@ if token_address:
             data = response.json()
             if data.get("status") == "1" and "result" in data and len(data["result"]) > 0:
                 contract_info = data["result"][0]
-                abi_status = contract_info.get("ABI", "")
-                is_verified = abi_status != "Contract source code not verified"
-
-                contract_name = contract_info.get("ContractName", "Невідомо")
-                compiler = contract_info.get("CompilerVersion", "Невідомо")
+                is_verified = contract_info.get("SourceCode", "") != ""
                 creator_address = contract_info.get("ContractCreator", "Невідомо")
 
                 st.markdown(f"✅ Верифікація контракту: {'✔️ Так' if is_verified else '❌ Ні'}")
-                st.markdown(f"🧪 Назва контракту: `{contract_name}`")
-                st.markdown(f"🛠 Компілер: `{compiler}`")
                 st.markdown(f"📍 Адреса власника контракту: `{creator_address}`")
             else:
                 st.warning("⚠️ Контракт не верифікований або не знайдено результатів на Etherscan")
@@ -74,7 +66,7 @@ if token_address:
     except Exception as e:
         st.error(f"❌ Помилка Etherscan: {e}")
 
-    # --- DexScreener ---
+    # DexScreener
     try:
         dex_url = f"https://api.dexscreener.com/latest/dex/tokens/{token_address}"
         response = requests.get(dex_url)
