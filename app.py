@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+ETHERSCAN_API_KEY = "XSUUHZGHN6ED625QCR6D6K2UBFBKT6S6"
 
 st.set_page_config(page_title="SniperBase", layout="wide")
 
