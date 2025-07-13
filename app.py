@@ -34,15 +34,17 @@ if token_address:
         symbol = contract.functions.symbol().call()
         decimals = contract.functions.decimals().call()
         total_supply = contract.functions.totalSupply().call() / (10 ** decimals)
-etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={token_address}&apikey={ETHERSCAN_API_KEY}"
+
+        etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={token_address}&apikey={ETHERSCAN_API_KEY}"
         response = requests.get(etherscan_url)
+
         if response.status_code == 200:
             data = response.json()
             if data["status"] == "1":
                 contract_info = data["result"][0]
                 is_verified = contract_info["SourceCode"] != ""
                 creator_address = contract_info["ContractCreator"]
-                st.markdown(f"🧾 Верифікація контракту: {'✅ Так' if is_verified else '❌ Ні'}")
+                st.markdown(f"🛡️ Верифікація контракту: {'✅ Так' if is_verified else '❌ Ні'}")
                 st.markdown(f"📮 Адреса власника контракту: `{creator_address}`")
             else:
                 st.error("❌ Не вдалось отримати інформацію з Etherscan")
@@ -52,7 +54,10 @@ etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcec
         st.success(f"🟢 Назва токена: {name}")
         st.success(f"🟢 Символ: {symbol}")
         st.info(f"📘 Децимали: {decimals}")
-        st.info(f"📘 Загальна емісія: {total_supply:,.0f} {symbol}")
+        st.info(f"📘 Загальна емісія: {total_supply:.0f} {symbol}")
+
+    except Exception as e:
+        st.error(f"❌ Помилка при обробці токена: {e}")
 
         # --- DexScreener ---
         dex_url = f"https://api.dexscreener.com/latest/dex/tokens/{token_address}"
