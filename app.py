@@ -37,6 +37,23 @@ if token_address:
 
         etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={token_address}&apikey={ETHERSCAN_API_KEY}"
         response = requests.get(etherscan_url)
+        etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={token_address}&apikey={ETHERSCAN_API_KEY}"
+        response = requests.get(etherscan_url)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("status") == "1" and "result" in data and len(data["result"]) > 0:
+                contract_info = data["result"][0]
+                source_code = contract_info.get("SourceCode", "")
+                is_verified = source_code != ""
+                creator_address = contract_info.get("ContractCreator", "Невідомо")
+
+                st.markdown(f"✅ Верифікація контракту: {'✅ Так' if is_verified else '❌ Ні'}")
+                st.markdown(f"🧑‍💻 Адреса власника контракту: `{creator_address}`")
+            else:
+                st.warning("⚠️ Контракт не верифікований або не знайдено результатів на Etherscan")
+        else:
+            st.error("❌ Etherscan API не відповідає")
 
         if response.status_code == 200:
             data = response.json()
