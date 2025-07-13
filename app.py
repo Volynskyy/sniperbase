@@ -71,33 +71,35 @@ if token_address:
         st.success(f"🟢 Назва токена: {name}")
         st.success(f"🟢 Символ: {symbol}")
         st.info(f"📘 Децимали: {decimals}")
-        st.info(f"📘 Загальна емісія: {total_supply:.0f} {symbol}")
+        st.info(f"🧮 Загальна емісія: {total_supply:.0f} {symbol}")
 
     except Exception as e:
         st.error(f"❌ Помилка при обробці токена: {e}")
 
-        # --- DexScreener ---
-        dex_url = f"https://api.dexscreener.com/latest/dex/tokens/{token_address}"
-        response = requests.get(dex_url)
+# === DexScreener ===
+try:
+    dex_url = f"https://api.dexscreener.com/latest/dex/tokens/{token_address}"
+    response = requests.get(dex_url)
 
-        if response.status_code == 200:
-            data = response.json()
-            if "pairs" in data and data["pairs"]:
-                pair = data["pairs"][0]
-                price = pair["priceUsd"]
-                liquidity_usd = pair["liquidity"]["usd"]
-                fdv = pair.get("fdv", "N/A")
-                volume = pair["volume"]["h24"]
+    if response.status_code == 200:
+        data = response.json()
+        if "pairs" in data and data["pairs"]:
+            pair = data["pairs"][0]
+            price = pair.get("priceUsd", "N/A")
+            liquidity_usd = pair.get("liquidity", {}).get("usd", "N/A")
+            fdv = pair.get("fdv", "N/A")
+            volume = pair.get("volume", {}).get("h24", "N/A")
 
-                st.divider()
-                st.subheader("📊 Дані з DexScreener")
-                st.metric("💲Ціна", f"${price}")
-                st.metric("💧Ліквідність", f"${int(liquidity_usd):,}")
-                st.metric("📈 Обʼєм (24h)", f"${int(volume):,}")
-                st.metric("FDV", f"${int(fdv):,}" if fdv != "N/A" else "N/A")
-            else:
-                st.warning("⚠️ Не знайдено пару для цього токена в DexScreener.")
+            st.divider()
+            st.subheader("📊 Дані з DexScreener")
+            st.metric("💲 Ціна", f"${price}")
+            st.metric("💧 Ліквідність", f"${liquidity_usd}")
+            st.metric("📈 Обʼєм (24h)", f"${volume}")
+            st.metric("FDV", f"${int(fdv):,}" if fdv != "N/A" else "N/A")
         else:
-            st.warning("⚠️ Не вдалося отримати дані з DexScreener.")
-    except Exception as e:
-        st.error(f"❌ Помилка: {e}")
+            st.warning("⚠️ Не знайдено пару для цього токена в DexScreener.")
+    else:
+        st.warning("⚠️ Не вдалося отримати дані з DexScreener.")
+
+except Exception as e:
+    st.error(f"❌ Помилка: {e}")
