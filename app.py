@@ -27,41 +27,39 @@ erc20_abi = [
 
 if token_address:
     try:
-    contract = web3.eth.contract(address=web3.to_checksum_address(token_address), abi=erc20_abi)
-    name = contract.functions.name().call()
-    symbol = contract.functions.symbol().call()
-    decimals = contract.functions.decimals().call()
-    total_supply = contract.functions.totalSupply().call() / (10 ** decimals)
+        contract = web3.eth.contract(address=web3.to_checksum_address(token_address), abi=erc20_abi)
+        name = contract.functions.name().call()
+        symbol = contract.functions.symbol().call()
+        decimals = contract.functions.decimals().call()
+        total_supply = contract.functions.totalSupply().call() / (10 ** decimals)
 
-    st.success(f"🟢 Назва токена: {name}")
-    st.success(f"🟢 Символ: {symbol}")
-    st.info(f"📘 Децимали: {decimals}")
-    st.info(f"📘 Загальна емісія: {total_supply:,.0f} {symbol}")
+        st.success(f"🟢 Назва токена: {name}")
+        st.success(f"🟢 Символ: {symbol}")
+        st.info(f"📘 Децимали: {decimals}")
+        st.info(f"📘 Загальна емісія: {total_supply:,.0f} {symbol}")
 
-    # --- NEW: DexScreener API ---
-    dex_url = f"https://api.dexscreener.com/latest/dex/tokens/{token_address}"
-    response = requests.get(dex_url)
+        # --- DexScreener ---
+        dex_url = f"https://api.dexscreener.com/latest/dex/tokens/{token_address}"
+        response = requests.get(dex_url)
 
-    if response.status_code == 200:
-        data = response.json()
-        if "pairs" in data and data["pairs"]:
-            pair = data["pairs"][0]
-            price = pair["priceUsd"]
-            liquidity_usd = pair["liquidity"]["usd"]
-            fdv = pair.get("fdv", "N/A")
-            volume = pair["volume"]["h24"]
+        if response.status_code == 200:
+            data = response.json()
+            if "pairs" in data and data["pairs"]:
+                pair = data["pairs"][0]
+                price = pair["priceUsd"]
+                liquidity_usd = pair["liquidity"]["usd"]
+                fdv = pair.get("fdv", "N/A")
+                volume = pair["volume"]["h24"]
 
-            st.divider()
-            st.subheader("📊 Дані з DexScreener")
-
-            st.metric("💲Ціна", f"${price}")
-            st.metric("💧Ліквідність", f"${int(liquidity_usd):,}")
-            st.metric("📈 Обʼєм (24h)", f"${int(volume):,}")
-            st.metric("FDV", f"${int(fdv):,}" if fdv != "N/A" else "N/A")
+                st.divider()
+                st.subheader("📊 Дані з DexScreener")
+                st.metric("💲Ціна", f"${price}")
+                st.metric("💧Ліквідність", f"${int(liquidity_usd):,}")
+                st.metric("📈 Обʼєм (24h)", f"${int(volume):,}")
+                st.metric("FDV", f"${int(fdv):,}" if fdv != "N/A" else "N/A")
+            else:
+                st.warning("⚠️ Не знайдено пару для цього токена в DexScreener.")
         else:
-            st.warning("⚠️ Не знайдено пару для цього токена в DexScreener.")
-    else:
-        st.warning("⚠️ Не вдалося отримати дані з DexScreener.")
-
-except Exception as e:
-    st.error(f"❌ Помилка: {e}")
+            st.warning("⚠️ Не вдалося отримати дані з DexScreener.")
+    except Exception as e:
+        st.error(f"❌ Помилка: {e}")
