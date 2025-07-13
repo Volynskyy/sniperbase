@@ -11,16 +11,49 @@ from web3 import Web3
 
 ETHERSCAN_API_KEY = "XSUUHZ6HN6ED625QCRD6DK2UBFBKT65G"
 
-st.set_page_config(page_title="SniperBase", layout="wide")
-st.title("🚀 SniperBase")
-st.markdown("Твій асистент для аналізу пампів, снайпінгу мем-токенів та швидкого входу в угоди. Тут буде 🔥.")
-st.info("🔧 MVP у процесі. Функціонал скоро буде розширено.")
-st.subheader("🧠 Введи адресу контракту токена")
+# 🔧 Page configuration
+st.set_page_config(page_title="SniperBase", layout="wide", page_icon="🧠")
 
+# 🎨 Custom CSS
+st.markdown("""
+    <style>
+        body {
+            background-color: #0f1117;
+            color: #ffffff;
+        }
+        .main {
+            background-color: #0f1117;
+            padding: 20px;
+        }
+        h1, h2, h3, .st-bf, .st-af {
+            color: #61dafb;
+        }
+        .stAlert {
+            border-radius: 10px;
+        }
+        .stMetric {
+            background-color: #1c1f26;
+            border-radius: 10px;
+            padding: 10px;
+        }
+    </style>
+"""", unsafe_allow_html=True)
+
+# 🧠 Title
+st.title("🧠 SniperBase")
+st.markdown("### Твій снайпер пампів і мем-токенів 🔥")
+
+st.info("⚙️ MVP-версія. Більше функцій скоро!")
+
+# 💬 Contract input
+st.subheader("🔍 Введи адресу контракту токена")
 token_address = st.text_input("Адреса контракту (ERC-20):")
+
+# 💡 Blockchain connection
 rpc_url = "https://eth.llamarpc.com"
 web3 = Web3(Web3.HTTPProvider(rpc_url))
 
+# ✅ ABI
 erc20_abi = [
     {"constant": True, "inputs": [], "name": "name", "outputs": [{"name": "", "type": "string"}], "type": "function"},
     {"constant": True, "inputs": [], "name": "symbol", "outputs": [{"name": "", "type": "string"}], "type": "function"},
@@ -36,15 +69,15 @@ if token_address:
         decimals = contract.functions.decimals().call()
         total_supply = contract.functions.totalSupply().call() / (10 ** decimals)
 
-        st.success(f"📘 Назва токена: {name}")
-        st.success(f"🧾 Символ: {symbol}")
-        st.info(f"📐 Деcимали: {decimals}")
-        st.info(f"📦 Загальна емісія: {total_supply:,.0f} {symbol}")
+        st.success(f"🧾 **Назва токена**: {name}")
+        st.success(f"🏷️ **Символ**: {symbol}")
+        st.info(f"📐 **Деcимали**: {decimals}")
+        st.info(f"📦 **Загальна емісія**: {total_supply:,.0f} {symbol}")
 
     except Exception as e:
         st.error(f"❌ Помилка при обробці токена: {e}")
 
-    # Etherscan перевірка
+    # 🔎 Etherscan Verification
     try:
         etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={token_address}&apikey={ETHERSCAN_API_KEY}"
         response = requests.get(etherscan_url)
@@ -56,8 +89,8 @@ if token_address:
                 is_verified = contract_info.get("SourceCode", "") != ""
                 creator_address = contract_info.get("ContractCreator", "Невідомо")
 
-                st.markdown(f"✅ Верифікація контракту: {'✔️ Так' if is_verified else '❌ Ні'}")
-                st.markdown(f"📍 Адреса власника контракту: `{creator_address}`")
+                st.markdown(f"🔐 **Верифікація контракту**: {'✅ Так' if is_verified else '❌ Ні'}")
+                st.markdown(f"👤 **Власник**: `{creator_address}`")
             else:
                 st.warning("⚠️ Контракт не верифікований або не знайдено результатів на Etherscan")
         else:
@@ -66,7 +99,7 @@ if token_address:
     except Exception as e:
         st.error(f"❌ Помилка Etherscan: {e}")
 
-    # DexScreener
+    # 📈 DexScreener
     try:
         dex_url = f"https://api.dexscreener.com/latest/dex/tokens/{token_address}"
         response = requests.get(dex_url)
@@ -85,7 +118,7 @@ if token_address:
                 st.metric("💲 Ціна", f"{price}")
                 st.metric("💧 Ліквідність", f"${liquidity_usd}")
                 st.metric("📦 Об’єм (24h)", f"${volume}")
-                st.metric("FDV", f"${int(fdv):,}" if fdv != "N/A" else "N/A")
+                st.metric("🏷️ FDV", f"${int(fdv):,}" if fdv != "N/A" else "N/A")
             else:
                 st.warning("⚠️ Не знайдено пару для цього токена в DexScreener.")
         else:
