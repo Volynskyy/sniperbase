@@ -61,9 +61,6 @@ erc20_abi = [
 ]
 
 if token_address:
-    # Ensure variables are defined even if API requests fail
-    is_verified = False
-    contract_info = {}
     try:
         contract = web3.eth.contract(address=web3.to_checksum_address(token_address), abi=erc20_abi)
         name = contract.functions.name().call()
