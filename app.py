@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import requests
 from web3 import Web3
@@ -23,34 +24,7 @@ st.markdown("""
         .block-container {
             padding-top: 2rem;
         }
-        .stTextInput>div>div>input {
-            background-color: #1c1c1c;
-            color: #f0f0f0;
-            border: 1px solid #f0b90b;
-        }
-        .stMetric {
-            background-color: #1c1c1c;
-            border-radius: 10px;
-            padding: 12px;
-            color: #f0b90b;
-        }
-        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
-            color: #f0b90b;
-        }
-        .stAlert, .stError, .stSuccess {
-            border-radius: 8px;
-        }
-        .stMarkdown a {
-            color: #f0b90b;
-        }
-    </style>
-""", unsafe_allow_html=True)
-
-# === TITLE ===
-st.title("🚀 SniperBase")
-st.markdown("Аналітика токенів: контракт, ліквідність, холдери, графік і анти-бот перевірка.")
-
-# === TOKEN INPUT ===
+@@ -54,98 +55,118 @@ st.markdown("Аналітика токенів: контракт, ліквідн
 token_address = st.text_input("🔍 Введи адресу контракту ERC-20 токена:")
 
 erc20_abi = [
@@ -76,6 +50,8 @@ if token_address:
         st.error(f"❌ Помилка при читанні контракту: {e}")
 
     # === ETHERSCAN ===
+    contract_info = None
+    is_verified = False
     try:
         etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={token_address}&apikey={ETHERSCAN_API_KEY}"
         response = requests.get(etherscan_url, timeout=10)
@@ -108,6 +84,17 @@ if token_address:
             volume = float(pair.get("volume", {}).get("h24", 0))
             fdv = float(pair.get("fdv", 0))
 
+            # === STORE PRICE HISTORY ===
+            history_file = f"history_{token_address}.csv"
+            if os.path.exists(history_file):
+                history_df = pd.read_csv(history_file, parse_dates=["timestamp"])
+            else:
+                history_df = pd.DataFrame(columns=["timestamp", "priceUsd"])
+
+            new_row = {"timestamp": datetime.utcnow(), "priceUsd": price}
+            history_df = pd.concat([history_df, pd.DataFrame([new_row])], ignore_index=True)
+            history_df.to_csv(history_file, index=False)
+
             st.markdown("## 📊 DexScreener")
             col1, col2, col3, col4 = st.columns(4)
             col1.metric("💰 Ціна", f"${price:,.6f}")
@@ -124,6 +111,13 @@ if token_address:
                 fig.add_trace(go.Scatter(x=timestamps, y=prices, mode="lines+markers", name="Ціна"))
                 fig.update_layout(title="📈 Графік ціни", xaxis_title="Час", yaxis_title="Ціна (native)", template="plotly_dark")
                 st.plotly_chart(fig, use_container_width=True)
+
+            # === ГРАФІК ІСТОРІЇ ===
+            if not history_df.empty:
+                fig_hist = go.Figure()
+                fig_hist.add_trace(go.Scatter(x=history_df["timestamp"], y=history_df["priceUsd"], mode="lines+markers", name="Price USD"))
+                fig_hist.update_layout(title="📈 Історія ціни (USD)", xaxis_title="Час", yaxis_title="Ціна (USD)", template="plotly_dark")
+                st.plotly_chart(fig_hist, use_container_width=True)
         else:
             st.warning("❌ Пара токена не знайдена на DexScreener")
     except Exception as e:
@@ -149,13 +143,3 @@ if token_address:
         if not is_verified:
             st.warning("⚠️ Неможливо провести аналіз — контракт не верифікований")
         else:
-            source_code = contract_info.get("SourceCode", "")
-            suspicious_patterns = ["blacklist", "sniper", "tradingEnabled", "maxTxAmount"]
-            warnings = [f"🔍 Виявлено `{pat}` у коді" for pat in suspicious_patterns if pat in source_code]
-            if warnings:
-                for warn in warnings:
-                    st.warning(warn)
-            else:
-                st.success("✅ Ознак анти-бот або MEV захисту не виявлено")
-    except Exception as e:
-        st.error(f"❌ Anti-Bot помилка: {e}")
