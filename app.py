@@ -15,37 +15,38 @@ web3 = Web3(Web3.HTTPProvider(rpc_url))
 st.set_page_config(page_title="SniperBase", layout="wide")
 
 # === STYLES ===
-st.markdown("""
-    <style>
-        body {
-            background-color: #000000;
-            color: #f0f0f0;
-        }
-        .block-container {
-            padding-top: 2rem;
-        }
-        .stTextInput>div>div>input {
-            background-color: #1c1c1c;
-            color: #f0f0f0;
-            border: 1px solid #f0b90b;
-        }
-        .stMetric {
-            background-color: #1c1c1c;
-            border-radius: 10px;
-            padding: 12px;
-            color: #f0b90b;
-        }
-        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
-            color: #f0b90b;
-        }
-        .stAlert, .stError, .stSuccess {
-            border-radius: 8px;
-        }
-        .stMarkdown a {
-            color: #f0b90b;
-        }
-    </style>
-""", unsafe_allow_html=True)
+style_block = """
+<style>
+    body {
+        background-color: #000000;
+        color: #f0f0f0;
+    }
+    .block-container {
+        padding-top: 2rem;
+    }
+    .stTextInput>div>div>input {
+        background-color: #1c1c1c;
+        color: #f0f0f0;
+        border: 1px solid #f0b90b;
+    }
+    .stMetric {
+        background-color: #1c1c1c;
+        border-radius: 10px;
+        padding: 12px;
+        color: #f0b90b;
+    }
+    .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+        color: #f0b90b;
+    }
+    .stAlert, .stError, .stSuccess {
+        border-radius: 8px;
+    }
+    .stMarkdown a {
+        color: #f0b90b;
+    }
+</style>
+"""
+st.markdown(style_block, unsafe_allow_html=True)
 
 # === TITLE ===
 st.title("🚀 SniperBase")
