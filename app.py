@@ -79,29 +79,43 @@ if token_address:
         st.error(f"❌ Помилка при читанні контракту: {e}")
 
     # ======= ETHERSCAN =======
-    try:
-        etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={token_address}&apikey={ETHERSCAN_API_KEY}"
-        response = requests.get(etherscan_url)
+try:
+    etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={token_address}&apikey={ETHERSCAN_API_KEY}"
+    response = requests.get(etherscan_url, timeout=10)
 
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("status") == "1" and data["result"]:
-                contract_info = data["result"][0]
-is_verified = contract_info.get("SourceCode", "") != ""
-# Save variable for further checks
-st.session_state["is_verified"] = is_verified
+    if response.status_code == 200:
+        data = response.json()
 
-                creator_address = contract_info.get("ContractCreator", "Невідомо")
+        # Перевірка, чи API повернув успішну відповідь
+        if data.get("status") == "1" and data.get("result"):
+            contract_info = data["result"][0]
 
-                st.markdown(f"✅ **Контракт верифікований:** {'Так' if is_verified else 'Ні'}")
+            # Перевірка наявності вихідного коду
+            is_verified = contract_info.get("SourceCode", "").strip() != ""
+            st.session_state["is_verified"] = is_verified  # Зберігаємо у сесію
 
-                st.markdown(f"🧑‍💻 **Адреса власника контракту:** `{creator_address}`")
+            # Отримуємо адресу творця
+            creator_address = contract_info.get("ContractCreator", "Невідомо")
+
+            # Виводимо результат
+            if is_verified:
+                st.markdown("✅ **Контракт верифікований:** Так")
             else:
-                st.warning("⚠️ Контракт не верифікований або не знайдено результатів на Etherscan")
+                st.markdown("⚠️ **Контракт не верифікований або порожній вихідний код**")
+
+            st.markdown(f"📍 **Адреса творця контракту:** `{creator_address}`")
+
         else:
-            st.error("❌ Etherscan API не відповідає")
-    except Exception as e:
-        st.error(f"❌ Etherscan помилка: {e}")
+            # Кейс: API статус не "1", або result порожній
+            message = data.get("message", "Невідома помилка")
+            st.warning(f"⚠️ Etherscan не зміг обробити запит: {message}")
+    else:
+        st.error(f"❌ Помилка запиту до Etherscan: Код {response.status_code}")
+
+except requests.exceptions.RequestException as e:
+    st.error(f"❌ Запит до Etherscan не вдалось виконати: {e}")
+except Exception as e:
+    st.error(f"❌ Неочікувана помилка при обробці Etherscan API: {e}")
 
     # ======= DEXSCREENER =======
     try:
