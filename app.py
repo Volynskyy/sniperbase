@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import requests
 from web3 import Web3
@@ -76,6 +77,8 @@ if token_address:
         st.error(f"❌ Помилка при читанні контракту: {e}")
 
     # === ETHERSCAN ===
+    contract_info = None
+    is_verified = False
     try:
         etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={token_address}&apikey={ETHERSCAN_API_KEY}"
         response = requests.get(etherscan_url, timeout=10)
@@ -108,6 +111,17 @@ if token_address:
             volume = float(pair.get("volume", {}).get("h24", 0))
             fdv = float(pair.get("fdv", 0))
 
+            # === STORE PRICE HISTORY ===
+            history_file = f"history_{token_address}.csv"
+            if os.path.exists(history_file):
+                history_df = pd.read_csv(history_file, parse_dates=["timestamp"])
+            else:
+                history_df = pd.DataFrame(columns=["timestamp", "priceUsd"])
+
+            new_row = {"timestamp": datetime.utcnow(), "priceUsd": price}
+            history_df = pd.concat([history_df, pd.DataFrame([new_row])], ignore_index=True)
+            history_df.to_csv(history_file, index=False)
+
             st.markdown("## 📊 DexScreener")
             col1, col2, col3, col4 = st.columns(4)
             col1.metric("💰 Ціна", f"${price:,.6f}")
@@ -124,6 +138,13 @@ if token_address:
                 fig.add_trace(go.Scatter(x=timestamps, y=prices, mode="lines+markers", name="Ціна"))
                 fig.update_layout(title="📈 Графік ціни", xaxis_title="Час", yaxis_title="Ціна (native)", template="plotly_dark")
                 st.plotly_chart(fig, use_container_width=True)
+
+            # === ГРАФІК ІСТОРІЇ ===
+            if not history_df.empty:
+                fig_hist = go.Figure()
+                fig_hist.add_trace(go.Scatter(x=history_df["timestamp"], y=history_df["priceUsd"], mode="lines+markers", name="Price USD"))
+                fig_hist.update_layout(title="📈 Історія ціни (USD)", xaxis_title="Час", yaxis_title="Ціна (USD)", template="plotly_dark")
+                st.plotly_chart(fig_hist, use_container_width=True)
         else:
             st.warning("❌ Пара токена не знайдена на DexScreener")
     except Exception as e:
