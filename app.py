@@ -57,31 +57,35 @@ if token_address:
     except Exception as e:
         st.error(f"❌ Помилка при читанні контракту: {e}")
 
-    # ====== Etherscan: Перевірка контракту ======
-    try:
-        etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={token_address}&apikey={ETHERSCAN_API_KEY}"
-        response = requests.get(etherscan_url, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("status") == "1" and data.get("result"):
-                contract_info = data["result"][0]
-                source_code = contract_info.get("SourceCode", "")
-                is_verified = source_code.strip() != ""
-                st.session_state["is_verified"] = is_verified
+   # ======= ETHERSCAN =======
+try:
+    etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={token_address}&apikey={ETHERSCAN_API_KEY}"
+    response = requests.get(etherscan_url, timeout=10)
 
-                creator_address = contract_info.get("ContractCreator", "Невідомо")
-                if is_verified:
-                    st.markdown("✅ **Контракт верифікований:** Так")
-                else:
-                    st.markdown("⚠️ **Контракт не верифікований або порожній вихідний код**")
+    if response.status_code == 200:
+        data = response.json()
+        if data.get("status") == "1" and data.get("result"):
+            contract_info = data["result"][0]
+            source_code = contract_info.get("SourceCode", "")
+            is_verified = source_code.strip() != ""
+            st.session_state["is_verified"] = is_verified
+            st.session_state["contract_source"] = source_code
 
-                st.markdown(f"📍 **Адреса творця контракту:** `{creator_address}`")
+            creator_address = contract_info.get("ContractCreator", "Невідомо")
+            if is_verified:
+                st.markdown("✅ **Контракт верифікований:** Так")
             else:
-                st.warning(f"⚠️ Etherscan не зміг обробити запит: {data.get('message', 'Unknown')}")
+                st.warning("⚠️ Контракт не верифікований або порожній вихідний код")
+            st.markdown(f"📍 **Адреса творця контракту:** `{creator_address}`")
         else:
-            st.error(f"❌ Помилка запиту до Etherscan: Код {response.status_code}")
-    except Exception as e:
-        st.error(f"❌ Etherscan API помилка: {e}")
+            message = data.get("message", "Невідома помилка")
+            result = data.get("result", "")
+            st.warning(f"⚠️ Etherscan не зміг обробити запит: {message}. Причина: {result}")
+    else:
+        st.error(f"❌ Помилка запиту до Etherscan: Код {response.status_code}")
+except Exception as e:
+    st.error(f"❌ Etherscan помилка: {e}")
+
 
     # ====== DexScreener ======
     try:
@@ -123,23 +127,22 @@ if token_address:
     except Exception as e:
         st.error(f"❌ Холдери помилка: {e}")
 
-    # ====== Anti-Bot / MEV аналіз ======
-    try:
-        st.subheader("🛡️ Anti-Bot / MEV аналіз", divider="orange")
+    # ======= ANTI-BOT / MEV =======
+try:
+    st.subheader("🛡️ Anti-Bot / MEV аналіз", divider="orange")
 
-        if not st.session_state.get("is_verified", False):
-            st.warning("⚠️ Контракт не верифікований, неможливо провести повний аналіз")
+    if not st.session_state.get("is_verified", False):
+        st.warning("⚠️ Контракт не верифікований, неможливо провести повний аналіз")
+    else:
+        source_code = st.session_state.get("contract_source", "")
+        suspicious_functions = ["setBlacklist", "isSniper", "setTradingEnabled", "setMaxTxAmount"]
+        flags = [f"🔍 Виявлено потенційно небезпечну функцію `{f}`" for f in suspicious_functions if f.lower() in source_code.lower()]
+
+        if flags:
+            for flag in flags:
+                st.warning(flag)
         else:
-            anti_bot_flags = []
-            suspicious_functions = ["setBlacklist", "isSniper", "setTradingEnabled", "setMaxTxAmount", "transferDelay", "gasLimit"]
-            for func in suspicious_functions:
-                if func.lower() in source_code.lower():
-                    anti_bot_flags.append(f"🔍 Можливо використовується `{func}` — ознака антибот/MEV логіки")
+            st.success("✅ Anti-Bot/MEV функції не виявлено")
+except Exception as e:
+    st.error(f"❌ Помилка Anti-Bot аналізу: {e}")
 
-            if anti_bot_flags:
-                for flag in anti_bot_flags:
-                    st.warning(flag)
-            else:
-                st.success("✅ Не виявлено підозрілих функцій анти-бот або MEV")
-    except Exception as e:
-        st.error(f"❌ Anti-Bot помилка: {e}")
