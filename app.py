@@ -1,60 +1,54 @@
 # app.py
-# Requires: streamlit, requests, web3
-
-try:
-    import streamlit as st
-except ModuleNotFoundError:
-    raise ModuleNotFoundError("Streamlit is not installed. Please install it with: pip install streamlit")
-
+import streamlit as st
 import requests
 from web3 import Web3
 
 ETHERSCAN_API_KEY = "XSUUHZ6HN6ED625QCRD6DK2UBFBKT65G"
 rpc_url = "https://eth.llamarpc.com"
+web3 = Web3(Web3.HTTPProvider(rpc_url))
 
 st.set_page_config(page_title="SniperBase", layout="wide")
 
-# ==== СТИЛЬ BINANCE ====
+# ===== 🎨 СТИЛІ =====
 st.markdown("""
     <style>
-        html, body, .main {
-            background-color: #0b0f1a;
-            color: #eaecef;
+        html, body, .block-container {
+            background-color: #000000;
+            color: #f0b90b;
             font-family: 'Segoe UI', sans-serif;
         }
-        .block-container {
-            padding-top: 2rem;
-        }
-        .stTextInput > div > div > input {
-            background-color: #1e222d;
-            color: #f0f0f0;
-            border: 1px solid #2c2f3a;
-            border-radius: 6px;
+        .stTextInput>div>div>input {
+            background-color: #121212;
+            color: white;
+            border: 1px solid #2f2f2f;
+            border-radius: 8px;
         }
         .stMetric {
-            background-color: #1e222d;
-            border: 1px solid #2a2e3d;
-            border-radius: 8px;
-            padding: 18px;
-            margin: 10px;
-            color: #f0f0f0;
+            background-color: #121212;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+            color: #f0b90b;
             font-weight: 600;
+            text-align: center;
         }
-        .stMarkdown h2, .stMarkdown h3, .stMarkdown h1 {
+        h1, h2, h3 {
             color: #f0b90b;
         }
-        .stAlert {
-            background-color: #1c1f2b !important;
-            color: #fff !important;
-            border-left: 5px solid #f0b90b !important;
+        .stAlert, .stMarkdown {
+            background-color: #121212;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        hr {
+            border-top: 1px solid #333;
         }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("## 🧠 Введи адресу контракту токена")
+# ===== 🧠 ХЕДЕР =====
+st.markdown("<h1>🧠 Введи адресу контракту токена</h1>", unsafe_allow_html=True)
 token_address = st.text_input("🔍 ERC-20 адреса контракту:")
-
-web3 = Web3(Web3.HTTPProvider(rpc_url))
 
 erc20_abi = [
     {"constant": True, "inputs": [], "name": "name", "outputs": [{"name": "", "type": "string"}], "type": "function"},
@@ -71,15 +65,15 @@ if token_address:
         decimals = contract.functions.decimals().call()
         total_supply = contract.functions.totalSupply().call() / (10 ** decimals)
 
-        st.success(f"🧾 **Назва токена:** `{name}`")
-        st.success(f"🏷️ **Символ:** `{symbol}`")
-        st.info(f"📐 **Деcимали:** `{decimals}`")
-        st.info(f"📦 **Загальна емісія:** `{total_supply:,.0f} {symbol}`")
+        st.markdown(f"🔶 <b>Назва токена:</b> <span style='color:#00ff99'>{name}</span>", unsafe_allow_html=True)
+        st.markdown(f"🔷 <b>Символ:</b> <span style='color:#00ff99'>{symbol}</span>", unsafe_allow_html=True)
+        st.markdown(f"🧮 <b>Деcимали:</b> {decimals}", unsafe_allow_html=True)
+        st.markdown(f"📦 <b>Загальна емісія:</b> {total_supply:,.0f} {symbol}", unsafe_allow_html=True)
 
     except Exception as e:
-        st.error(f"❌ Помилка токена: {e}")
+        st.error(f"❌ Помилка при обробці токена: {e}")
 
-    # ==== ETHERSCAN ====
+    # ===== 🔎 ETHERSCAN =====
     try:
         etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={token_address}&apikey={ETHERSCAN_API_KEY}"
         response = requests.get(etherscan_url)
@@ -91,17 +85,17 @@ if token_address:
                 is_verified = contract_info.get("SourceCode", "") != ""
                 creator_address = contract_info.get("ContractCreator", "Невідомо")
 
-                st.markdown(f"🛡️ **Верифікація контракту:** {'✅ Так' if is_verified else '❌ Ні'}")
-                st.markdown(f"👤 **Власник контракту:** `{creator_address}`")
+                st.markdown(f"✅ <b>Контракт верифіковано:</b> {'Так' if is_verified else 'Ні'}", unsafe_allow_html=True)
+                st.markdown(f"👤 <b>Адреса власника:</b> `{creator_address}`", unsafe_allow_html=True)
             else:
-                st.warning("⚠️ Контракт не верифікований або не знайдено результатів на Etherscan.")
+                st.warning("⚠️ Контракт не верифікований або не знайдено результатів на Etherscan")
         else:
-            st.error("❌ Проблема з Etherscan API")
+            st.error("❌ Etherscan API не відповідає")
 
     except Exception as e:
         st.error(f"❌ Помилка Etherscan: {e}")
 
-    # ==== DEXSCREENER ====
+    # ===== 📊 DEXSCREENER =====
     try:
         dex_url = f"https://api.dexscreener.com/latest/dex/tokens/{token_address}"
         response = requests.get(dex_url)
@@ -115,11 +109,11 @@ if token_address:
                 fdv = pair.get("fdv", "N/A")
                 volume = pair.get("volume", {}).get("h24", "N/A")
 
-                st.markdown("---")
-                st.markdown("## 📊 Дані з DexScreener")
+                st.markdown("<hr>", unsafe_allow_html=True)
+                st.markdown("### 📊 Дані з DexScreener")
 
                 col1, col2, col3, col4 = st.columns(4)
-                col1.metric("💲 Ціна", f"${float(price):,.6f}" if price != "N/A" else "N/A")
+                col1.metric("💰 Ціна", f"${float(price):,.6f}" if price != "N/A" else "N/A")
                 col2.metric("💧 Ліквідність", f"${float(liquidity_usd):,.2f}" if liquidity_usd != "N/A" else "N/A")
                 col3.metric("📦 Обʼєм (24h)", f"${float(volume):,.2f}" if volume != "N/A" else "N/A")
                 col4.metric("🏷️ FDV", f"${int(fdv):,}" if fdv != "N/A" else "N/A")
