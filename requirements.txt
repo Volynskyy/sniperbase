@@ -1,2 +1,7 @@
 streamlit
+requests
 web3
+pandas
+plotly
+aiohttp
+eth_account
