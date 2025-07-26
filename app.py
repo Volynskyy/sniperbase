@@ -1,3 +1,5 @@
+# app.py
+
 import streamlit as st
 import requests
 from web3 import Web3
@@ -7,39 +9,49 @@ import plotly.graph_objs as go
 ETHERSCAN_API_KEY = "XSUUHZ6HN6ED625QCRD6DK2UBFBKT65G"
 rpc_url = "https://eth.llamarpc.com"
 
-# === Page config ===
+web3 = Web3(Web3.HTTPProvider(rpc_url))
 st.set_page_config(page_title="SniperBase", layout="wide")
 
-# === Styles ===
+# ======= CUSTOM DARK UI STYLES (BINANCE-STYLE) =======
 st.markdown("""
     <style>
         body {
             background-color: #000000;
             color: #f0f0f0;
         }
+        .block-container {
+            padding-top: 2rem;
+        }
         .stTextInput>div>div>input {
             background-color: #1c1c1c;
-            color: #fff;
+            color: #f0f0f0;
             border: 1px solid #f0b90b;
         }
         .stMetric {
             background-color: #1c1c1c;
-            padding: 12px;
             border-radius: 10px;
-            margin: 6px;
+            padding: 12px;
             color: #f0b90b;
         }
         .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
             color: #f0b90b;
         }
+        .stAlert, .stError, .stSuccess {
+            border-radius: 8px;
+        }
+        .stMarkdown a {
+            color: #f0b90b;
+        }
     </style>
 """, unsafe_allow_html=True)
 
-# === Title ===
-st.markdown("## 🧠 Введи адресу контракту токена")
-token_address = st.text_input("🔍 ERC-20 адреса контракту:")
+# ====== LANDING INTRO ======
+st.markdown("## 🚀 Ласкаво просимо до SniperBase")
+st.markdown("Інструмент для швидкої перевірки нових токенів: **аналіз контракту, ліквідність, холдери та MEV-пастки**")
 
-web3 = Web3(Web3.HTTPProvider(rpc_url))
+# ======= ВВЕДЕННЯ КОНТРАКТУ =======
+st.markdown("### 🧠 Введи адресу контракту токена")
+token_address = st.text_input("🔍 ERC-20 адреса контракту:")
 
 erc20_abi = [
     {"constant": True, "inputs": [], "name": "name", "outputs": [{"name": "", "type": "string"}], "type": "function"},
@@ -47,6 +59,8 @@ erc20_abi = [
     {"constant": True, "inputs": [], "name": "decimals", "outputs": [{"name": "", "type": "uint8"}], "type": "function"},
     {"constant": True, "inputs": [], "name": "totalSupply", "outputs": [{"name": "", "type": "uint256"}], "type": "function"}
 ]
+
+verified = False
 
 if token_address:
     try:
@@ -56,103 +70,85 @@ if token_address:
         decimals = contract.functions.decimals().call()
         total_supply = contract.functions.totalSupply().call() / (10 ** decimals)
 
-        st.success(f"🟨 **Назва токена**: {name}")
-        st.success(f"🟨 **Символ**: {symbol}")
-        st.info(f"🧮 Деcимали: {decimals}")
-        st.info(f"📦 Загальна емісія: {total_supply:,.0f} {symbol}")
+        st.success(f"🪙 **Назва токена:** {name}")
+        st.success(f"💱 **Символ:** {symbol}")
+        st.info(f"🔢 **Деcимали:** {decimals}")
+        st.info(f"📦 **Загальна емісія:** {total_supply:,.0f} {symbol}")
 
     except Exception as e:
-        st.error(f"❌ Помилка при обробці токена: {e}")
+        st.error(f"❌ Помилка при читанні контракту: {e}")
 
-    # === ETHERSCAN VERIFICATION ===
+    # ======= ETHERSCAN =======
     try:
         etherscan_url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={token_address}&apikey={ETHERSCAN_API_KEY}"
-        res = requests.get(etherscan_url).json()
+        response = requests.get(etherscan_url)
 
-        if res["status"] == "1" and res["result"]:
-            code_data = res["result"][0]
-            verified = bool(code_data.get("SourceCode"))
-            creator = code_data.get("ContractCreator", "Невідомо")
-            st.markdown(f"🟡 **Контракт верифікований:** {'✅ Так' if verified else '❌ Ні'}")
-            st.markdown(f"👤 Власник контракту: `{creator}`")
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("status") == "1" and data["result"]:
+                contract_info = data["result"][0]
+                verified = contract_info.get("SourceCode", "") != ""
+                creator_address = contract_info.get("ContractCreator", "Невідомо")
+
+                st.markdown(f"✅ **Контракт верифікований:** {'Так' if verified else 'Ні'}")
+                st.markdown(f"🧑‍💻 **Адреса власника контракту:** `{creator_address}`")
+            else:
+                st.warning("⚠️ Контракт не верифікований або не знайдено результатів на Etherscan")
         else:
-            st.warning("⚠️ Контракт не верифікований або не знайдено результатів на Etherscan")
-
+            st.error("❌ Etherscan API не відповідає")
     except Exception as e:
-        st.error(f"❌ Помилка перевірки: {e}")
+        st.error(f"❌ Etherscan помилка: {e}")
 
-    # === DEXSCREENER DATA ===
+    # ======= DEXSCREENER =======
     try:
-        url = f"https://api.dexscreener.com/latest/dex/tokens/{token_address}"
-        res = requests.get(url).json()
+        dex_url = f"https://api.dexscreener.com/latest/dex/tokens/{token_address}"
+        response = requests.get(dex_url)
+        if response.status_code == 200:
+            data = response.json()
+            if "pairs" in data and data["pairs"]:
+                pair = data["pairs"][0]
+                price = pair.get("priceUsd", "N/A")
+                liquidity_usd = pair.get("liquidity", {}).get("usd", "N/A")
+                volume = pair.get("volume", {}).get("h24", "N/A")
+                fdv = pair.get("fdv", "N/A")
 
-        if "pairs" in res and res["pairs"]:
-            pair = res["pairs"][0]
-            price = float(pair["priceUsd"])
-            liquidity = float(pair["liquidity"]["usd"])
-            volume = float(pair["volume"]["h24"])
-            fdv = int(pair["fdv"])
-            price_data = pair.get("priceNative", None)
-
-            st.markdown("### 📊 Дані з DexScreener")
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("💰 Ціна", f"${price:,.6f}")
-            c2.metric("💧 Ліквідність", f"${liquidity:,.2f}")
-            c3.metric("📦 Обʼєм (24h)", f"${volume:,.2f}")
-            c4.metric("🏷️ FDV", f"${fdv:,}")
-
-            # Графік ціни
-            if "chart" in pair:
-                price_points = pair["chart"]
-                timestamps = [p["timestamp"] for p in price_points]
-                prices = [float(p["priceUsd"]) for p in price_points]
-
-                df = pd.DataFrame({"Timestamp": pd.to_datetime(timestamps, unit='s'), "Price": prices})
-                fig = go.Figure(go.Scatter(x=df["Timestamp"], y=df["Price"], mode='lines', name='Ціна'))
-                fig.update_layout(title="📈 Історія ціни", template="plotly_dark")
-                st.plotly_chart(fig, use_container_width=True)
-
+                st.markdown("## 📊 Дані з DexScreener")
+                col1, col2, col3, col4 = st.columns(4)
+                col1.metric("💰 Ціна", f"${float(price):,.6f}" if price != "N/A" else "N/A")
+                col2.metric("💧 Ліквідність", f"${float(liquidity_usd):,.2f}" if liquidity_usd != "N/A" else "N/A")
+                col3.metric("📦 Обʼєм (24h)", f"${float(volume):,.2f}" if volume != "N/A" else "N/A")
+                col4.metric("🏷️ FDV", f"${int(fdv):,}" if fdv != "N/A" else "N/A")
+            else:
+                st.warning("⚠️ Не знайдено пару для цього токена")
+        else:
+            st.warning("⚠️ Не вдалося отримати дані з DexScreener")
     except Exception as e:
         st.error(f"❌ DexScreener помилка: {e}")
 
-    # === ТОП ХОЛДЕРИ ===
+    # ======= HOLDERS (READ FROM TOKEN CONTRACT) =======
     try:
-        holders_url = f"https://api.etherscan.io/api?module=token&action=tokenholderlist&contractaddress={token_address}&page=1&offset=5&apikey={ETHERSCAN_API_KEY}"
-        response = requests.get(holders_url).json()
-        if response["status"] == "1":
-            st.markdown("### 👥 Топ 5 холдерів")
-            for holder in response["result"]:
-                addr = holder["HolderAddress"]
-                balance = int(holder["TokenHolderQuantity"]) / (10 ** decimals)
-                st.write(f"🔸 `{addr}`: **{balance:,.2f} {symbol}**")
+        st.markdown("## 🧍‍♂️ Холдерам")
+        holder_count_url = f"https://api.ethplorer.io/getTokenInfo/{token_address}?apiKey=freekey"
+        resp = requests.get(holder_count_url)
+        if resp.status_code == 200:
+            data = resp.json()
+            holders = data.get("holdersCount", "N/A")
+            st.success(f"👥 Кількість холдерів: {holders}")
         else:
-            st.warning("⚠️ Неможливо отримати список холдерів.")
-
+            st.warning("⚠️ Неможливо отримати список холдерів")
     except Exception as e:
-        st.error(f"❌ Помилка холдерів: {e}")
+        st.error(f"❌ Холдери помилка: {e}")
 
-    # === Anti-MEV/Anti-Bot Аналіз ===
-    st.markdown("### 🛡️ Anti-Bot / MEV аналіз")
+    # ======= ANTI-BOT / MEV CHECK =======
+    st.markdown("## 🛡️ Anti-Bot / MEV аналіз")
     try:
-        if verified and "SourceCode" in code_data:
-            src = code_data["SourceCode"]
-            red_flags = []
-
-            if "maxTxAmount" in src.lower() or "maxWallet" in src.lower():
-                red_flags.append("📛 Ліміт на кількість токенів у гаманці або транзакції")
-
-            if "blacklist" in src.lower():
-                red_flags.append("🚫 Присутній Blacklist механізм")
-
-            if "mev" in src.lower():
-                red_flags.append("🤖 Anti-MEV логіка (можливо)")
-
-            if red_flags:
-                for item in red_flags:
-                    st.warning(item)
+        if verified:
+            source_code = contract_info.get("SourceCode", "")
+            if any(keyword in source_code.lower() for keyword in ["maxgas", "isbot", "blacklist", "cooldown"]):
+                st.warning("⚠️ Знайдено підозрілі функції (anti-bot або anti-MEV)")
             else:
-                st.success("✅ Антибот або анти-MEV логіка не виявлена.")
+                st.success("✅ Не виявлено підозрілих механізмів")
         else:
-            st.warning("⚠️ Контракт не верифікований — неможливо перевірити код.")
+            st.warning("⚠️ Контракт не верифікований, неможливо провести повний аналіз")
     except Exception as e:
-        st.error(f"❌ Аналіз контракту провалився: {e}")
+        st.error(f"❌ Аналіз провалився: {e}")
