@@ -157,24 +157,31 @@ except Exception as e:
     except Exception as e:
         st.error(f"❌ Холдери помилка: {e}")
 
-   # === Anti-Bot / MEV аналіз ===
-st.markdown("### 🛡️ Anti-Bot / MEV аналіз")
+  # ======= ANTI-BOT / MEV ANALYSIS =======
+try:
+    st.subheader("🛡️ Anti-Bot / MEV аналіз", divider="orange")
 
-if "is_verified" not in st.session_state:
-    st.warning("⚠️ Спочатку виконайте верифікацію контракту через Etherscan.")
-else:
-    if st.session_state["is_verified"]:
-        st.success("✅ Контракт верифікований — базові перевірки можна виконати.")
-        
-        # Тут можна буде додати реальні перевірки honeypot / blacklist (пізніше через API)
-        honeypot = False  # Приклад, заміни логікою
-        blacklist = False  # Приклад, заміни логікою
-
-        if honeypot:
-            st.error("❌ Виявлено Honeypot: не можна продати токен після купівлі.")
-        elif blacklist:
-            st.error("❌ Виявлено адреси у чорному списку.")
-        else:
-            st.success("✅ Не виявлено відомих захистів Honeypot або чорних списків.")
+    if not st.session_state.get("is_verified", False):
+        st.warning("⚠️ Контракт не верифікований, неможливо провести повний аналіз")
     else:
-        st.warning("⚠️ Контракт не верифікований, неможливо провести повний аналіз.")
+        # Example: Simulate anti-bot protection checks (mocked logic for now)
+        # You can later expand this with real logic using ABI decoding or Web3 calls
+
+        # Placeholder: Define safe heuristics (can be replaced with real rules)
+        anti_bot_flags = []
+
+        # Common indicators of bot protection
+        suspicious_functions = ["setBlacklist", "isSniper", "setTradingEnabled", "setMaxTxAmount"]
+        for func in suspicious_functions:
+            if func.lower() in contract_info.get("SourceCode", "").lower():
+                anti_bot_flags.append(f"🔍 Можливо використовується функція `{func}` для захисту від ботів")
+
+        if anti_bot_flags:
+            for flag in anti_bot_flags:
+                st.warning(flag)
+        else:
+            st.success("✅ Ознак анти-бот або MEV захисту не виявлено у верифікованому коді контракту")
+
+except Exception as e:
+    st.error(f"❌ Помилка при аналізі анти-бот/MEV: {e}")
+
