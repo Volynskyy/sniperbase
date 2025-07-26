@@ -131,28 +131,21 @@ if token_address:
     except Exception as e:
         st.error(f"❌ Помилка холдерів: {e}")
 
-    # === Anti-MEV/Anti-Bot Аналіз ===
-    st.markdown("### 🛡️ Anti-Bot / MEV аналіз")
+    # === ANTI-BOT ===
     try:
-        if verified and "SourceCode" in code_data:
-            src = code_data["SourceCode"]
-            red_flags = []
-
-            if "maxTxAmount" in src.lower() or "maxWallet" in src.lower():
-                red_flags.append("📛 Ліміт на кількість токенів у гаманці або транзакції")
-
-            if "blacklist" in src.lower():
-                red_flags.append("🚫 Присутній Blacklist механізм")
-
-            if "mev" in src.lower():
-                red_flags.append("🤖 Anti-MEV логіка (можливо)")
-
-            if red_flags:
-                for item in red_flags:
-                    st.warning(item)
-            else:
-                st.success("✅ Антибот або анти-MEV логіка не виявлена.")
+        st.subheader("🛡️ Anti-Bot / MEV Аналіз", divider="orange")
+        is_verified = False  # тимчасово
+        contract_info = {}  # тимчасово
+        if not is_verified:
+            st.warning("⚠️ Неможливо провести аналіз — контракт не верифікований")
         else:
-            st.warning("⚠️ Контракт не верифікований — неможливо перевірити код.")
+            source_code = contract_info.get("SourceCode", "")
+            suspicious_patterns = ["blacklist", "sniper", "tradingEnabled", "maxTxAmount"]
+            warnings = [f"🔍 Виявлено `{pat}` у коді" for pat in suspicious_patterns if pat in source_code]
+            if warnings:
+                for warn in warnings:
+                    st.warning(warn)
+            else:
+                st.success("✅ Ознак анти-бот або MEV захисту не виявлено")
     except Exception as e:
-        st.error(f"❌ Аналіз контракту провалився: {e}")
+        st.error(f"❌ Anti-Bot помилка: {e}")
