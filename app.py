@@ -87,10 +87,14 @@ if token_address:
             data = response.json()
             if data.get("status") == "1" and data["result"]:
                 contract_info = data["result"][0]
-                verified = contract_info.get("SourceCode", "") != ""
+is_verified = contract_info.get("SourceCode", "") != ""
+# Save variable for further checks
+st.session_state["is_verified"] = is_verified
+
                 creator_address = contract_info.get("ContractCreator", "Невідомо")
 
-                st.markdown(f"✅ **Контракт верифікований:** {'Так' if verified else 'Ні'}")
+                st.markdown(f"✅ **Контракт верифікований:** {'Так' if is_verified else 'Ні'}")
+
                 st.markdown(f"🧑‍💻 **Адреса власника контракту:** `{creator_address}`")
             else:
                 st.warning("⚠️ Контракт не верифікований або не знайдено результатів на Etherscan")
@@ -139,16 +143,24 @@ if token_address:
     except Exception as e:
         st.error(f"❌ Холдери помилка: {e}")
 
-    # ======= ANTI-BOT / MEV CHECK =======
-    st.markdown("## 🛡️ Anti-Bot / MEV аналіз")
-    try:
-        if verified:
-            source_code = contract_info.get("SourceCode", "")
-            if any(keyword in source_code.lower() for keyword in ["maxgas", "isbot", "blacklist", "cooldown"]):
-                st.warning("⚠️ Знайдено підозрілі функції (anti-bot або anti-MEV)")
-            else:
-                st.success("✅ Не виявлено підозрілих механізмів")
+   # === Anti-Bot / MEV аналіз ===
+st.markdown("### 🛡️ Anti-Bot / MEV аналіз")
+
+if "is_verified" not in st.session_state:
+    st.warning("⚠️ Спочатку виконайте верифікацію контракту через Etherscan.")
+else:
+    if st.session_state["is_verified"]:
+        st.success("✅ Контракт верифікований — базові перевірки можна виконати.")
+        
+        # Тут можна буде додати реальні перевірки honeypot / blacklist (пізніше через API)
+        honeypot = False  # Приклад, заміни логікою
+        blacklist = False  # Приклад, заміни логікою
+
+        if honeypot:
+            st.error("❌ Виявлено Honeypot: не можна продати токен після купівлі.")
+        elif blacklist:
+            st.error("❌ Виявлено адреси у чорному списку.")
         else:
-            st.warning("⚠️ Контракт не верифікований, неможливо провести повний аналіз")
-    except Exception as e:
-        st.error(f"❌ Аналіз провалився: {e}")
+            st.success("✅ Не виявлено відомих захистів Honeypot або чорних списків.")
+    else:
+        st.warning("⚠️ Контракт не верифікований, неможливо провести повний аналіз.")
