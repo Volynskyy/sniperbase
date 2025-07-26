@@ -14,37 +14,45 @@ rpc_url = "https://eth.llamarpc.com"
 
 st.set_page_config(page_title="SniperBase", layout="wide")
 
-# ==== СТИЛІ ====
+# ==== СТИЛЬ BINANCE ====
 st.markdown("""
     <style>
-        body {
+        html, body, .main {
             background-color: #0b0f1a;
             color: #eaecef;
+            font-family: 'Segoe UI', sans-serif;
         }
         .block-container {
             padding-top: 2rem;
         }
         .stTextInput > div > div > input {
-            background-color: #1c1f2b;
-            color: white;
-            border: 1px solid #2a2e3d;
+            background-color: #1e222d;
+            color: #f0f0f0;
+            border: 1px solid #2c2f3a;
+            border-radius: 6px;
         }
         .stMetric {
-            background-color: #1c1f2b;
+            background-color: #1e222d;
+            border: 1px solid #2a2e3d;
             border-radius: 8px;
-            padding: 16px;
-            margin: 8px;
-            color: white;
+            padding: 18px;
+            margin: 10px;
+            color: #f0f0f0;
             font-weight: 600;
         }
         .stMarkdown h2, .stMarkdown h3, .stMarkdown h1 {
             color: #f0b90b;
         }
+        .stAlert {
+            background-color: #1c1f2b !important;
+            color: #fff !important;
+            border-left: 5px solid #f0b90b !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("### 🧠 Введи адресу контракту токена")
-token_address = st.text_input("Адреса контракту (ERC-20):")
+st.markdown("## 🧠 Введи адресу контракту токена")
+token_address = st.text_input("🔍 ERC-20 адреса контракту:")
 
 web3 = Web3(Web3.HTTPProvider(rpc_url))
 
@@ -63,13 +71,13 @@ if token_address:
         decimals = contract.functions.decimals().call()
         total_supply = contract.functions.totalSupply().call() / (10 ** decimals)
 
-        st.success(f"🟩 Назва токена: **{name}**")
-        st.success(f"🟨 Символ: **{symbol}**")
-        st.info(f"🧮 Деcимали: **{decimals}**")
-        st.info(f"📦 Загальна емісія: **{total_supply:,.0f} {symbol}**")
+        st.success(f"🧾 **Назва токена:** `{name}`")
+        st.success(f"🏷️ **Символ:** `{symbol}`")
+        st.info(f"📐 **Деcимали:** `{decimals}`")
+        st.info(f"📦 **Загальна емісія:** `{total_supply:,.0f} {symbol}`")
 
     except Exception as e:
-        st.error(f"❌ Помилка при обробці токена: {e}")
+        st.error(f"❌ Помилка токена: {e}")
 
     # ==== ETHERSCAN ====
     try:
@@ -83,12 +91,12 @@ if token_address:
                 is_verified = contract_info.get("SourceCode", "") != ""
                 creator_address = contract_info.get("ContractCreator", "Невідомо")
 
-                st.markdown(f"🟢 Верифікація контракту: {'✔️ Так' if is_verified else '❌ Ні'}")
-                st.markdown(f"👤 Адреса власника контракту: `{creator_address}`")
+                st.markdown(f"🛡️ **Верифікація контракту:** {'✅ Так' if is_verified else '❌ Ні'}")
+                st.markdown(f"👤 **Власник контракту:** `{creator_address}`")
             else:
-                st.warning("⚠️ Контракт не верифікований або не знайдено результатів на Etherscan")
+                st.warning("⚠️ Контракт не верифікований або не знайдено результатів на Etherscan.")
         else:
-            st.error("❌ Etherscan API не відповідає")
+            st.error("❌ Проблема з Etherscan API")
 
     except Exception as e:
         st.error(f"❌ Помилка Etherscan: {e}")
@@ -108,7 +116,7 @@ if token_address:
                 volume = pair.get("volume", {}).get("h24", "N/A")
 
                 st.markdown("---")
-                st.markdown("### 📊 Дані з DexScreener")
+                st.markdown("## 📊 Дані з DexScreener")
 
                 col1, col2, col3, col4 = st.columns(4)
                 col1.metric("💲 Ціна", f"${float(price):,.6f}" if price != "N/A" else "N/A")
