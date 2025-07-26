@@ -115,21 +115,20 @@ if token_address:
     except Exception as e:
         st.error(f"❌ DexScreener помилка: {e}")
 
-    # === ТОП ХОЛДЕРИ ===
+    # === HOLDERS ===
     try:
-        holders_url = f"https://api.etherscan.io/api?module=token&action=tokenholderlist&contractaddress={token_address}&page=1&offset=5&apikey={ETHERSCAN_API_KEY}"
-        response = requests.get(holders_url).json()
-        if response["status"] == "1":
-            st.markdown("### 👥 Топ 5 холдерів")
-            for holder in response["result"]:
-                addr = holder["HolderAddress"]
-                balance = int(holder["TokenHolderQuantity"]) / (10 ** decimals)
-                st.write(f"🔸 `{addr}`: **{balance:,.2f} {symbol}**")
+        st.markdown("## 🧍‍♂️ Холдери")
+        holders_url = f"https://api.ethplorer.io/getTokenInfo/{token_address}?apiKey=freekey"
+        resp = requests.get(holders_url)
+        if resp.status_code == 200:
+            data = resp.json()
+            holders = data.get("holdersCount", "N/A")
+            st.success(f"👥 Кількість холдерів: {holders}")
         else:
-            st.warning("⚠️ Неможливо отримати список холдерів.")
-
+            st.warning("⚠️ Неможливо отримати список холдерів")
     except Exception as e:
-        st.error(f"❌ Помилка холдерів: {e}")
+        st.error(f"❌ Холдери помилка: {e}")
+
 
     # === ANTI-BOT ===
     try:
