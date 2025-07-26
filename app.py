@@ -24,7 +24,6 @@ st.markdown("""
         .block-container {
             padding-top: 2rem;
         }
-@@ -54,98 +55,118 @@ st.markdown("Аналітика токенів: контракт, ліквідн
         .stTextInput>div>div>input {
             background-color: #1c1c1c;
             color: #f0f0f0;
@@ -77,13 +76,6 @@ if token_address:
     except Exception as e:
         st.error(f"❌ Помилка при читанні контракту: {e}")
 
-    # === ETHERSCAN ===
-@@ -121,25 +148,35 @@ if token_address:
-        else:
-            st.warning("❌ Пара токена не знайдена на DexScreener")
-    except Exception as e:
-        st.error(f"❌ DexScreener помилка: {e}")
-
     # === HOLDERS ===
     try:
         st.markdown("## 🧍‍♂️ Холдери")
@@ -101,6 +93,8 @@ if token_address:
     # === ANTI-BOT ===
     try:
         st.subheader("🛡️ Anti-Bot / MEV Аналіз", divider="orange")
+        is_verified = False  # тимчасово
+        contract_info = {}  # тимчасово
         if not is_verified:
             st.warning("⚠️ Неможливо провести аналіз — контракт не верифікований")
         else:
